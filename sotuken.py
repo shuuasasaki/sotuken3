@@ -539,24 +539,25 @@ elif selected == "閲覧・検索":
 
         
 # --- 資料リンク画面 ---
+# --- 資料リンク画面 ---
 elif selected == "資料":
     st.markdown(
-    """
-    <style>
-    .center-title {
-        text-align: center;
-        font-size: 56px;
-        font-weight: bold;
-        
-        margin-bottom: 20px;
-    }
-    </style>
-    <div class="center-title">研究資料ページ</div>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <style>
+        .center-title {
+            text-align: center;
+            font-size: 56px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="center-title">研究資料ページ</div>
+        """,
+        unsafe_allow_html=True
+    )
     st.write("各研究のPowerPointやWord資料にアクセスできます。")
 
+    # CSS
     st.markdown(
         """
         <style>
@@ -574,11 +575,10 @@ elif selected == "資料":
         }
         .table-cell {
             display: flex;
-            align-items: center;     /* 縦方向中央 */
-            justify-content: center; /* 横方向中央 */
+            align-items: center;
+            justify-content: center;
             height: 100%;
-            height: 100%;               /* 縦幅もセルいっぱいに */
-            padding: 20px;              /* 余白調整 */
+            padding: 20px;
             box-sizing: border-box; 
         }
         .table-header, .table th {
@@ -598,37 +598,8 @@ elif selected == "資料":
         .table td {
             text-align: center;     
             border-bottom: 1px solid #ddd;
-            padding: 0;
-            text-align: center;
             background-color: #fff;
-            transition: background-color 0.3s ease;
-            vertical-align: middle;
             min-height: 70px;
-        }
-        div.stDownloadButton > button {
-            display: block;
-            margin: 6px auto;
-            width: 90%;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, #66bb6a, #43a047);
-            border: none;
-            border-radius: 24px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-        div.stDownloadButton > button:hover {
-            background: linear-gradient(135deg, #81c784, #66bb6a);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
-        }
-        div.stDownloadButton > button:active {
-            background: linear-gradient(135deg, #388e3c, #2e7d32);
-            transform: translateY(0);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
         </style>
         """,
@@ -640,8 +611,8 @@ elif selected == "資料":
         return pd.read_excel("卒業研究リンク.xlsx")
 
     df_links = load_data()
-    df_links["Word_exists"] = df_links["報告書"].apply(lambda x: pd.notna(x) and os.path.exists(x))
 
+    # 検索とソート
     search_query = st.text_input("タイトルで検索")
     col_sort1, col_sort2 = st.columns([2, 1])
     with col_sort1:
@@ -654,6 +625,7 @@ elif selected == "資料":
         filtered_df = filtered_df[filtered_df["タイトル"].str.contains(search_query, case=False, na=False)]
     filtered_df = filtered_df.sort_values(by=sort_col, ascending=(sort_order == "昇順"))
 
+    # 表ヘッダ
     col1, col2, col3, col4, col5 = st.columns([1, 1.5, 1, 1, 1])
     with col1:
         st.markdown('<div class="table-header hide-mobile">年</div>', unsafe_allow_html=True)
@@ -666,51 +638,42 @@ elif selected == "資料":
     with col5:
         st.markdown('<div class="table-header hide-mobile">報告書</div>', unsafe_allow_html=True)
 
-    counter = 0
-
+    # --- 行の表示 ---
     for idx, row in filtered_df.iterrows():
-        tosi = row["年"]
+        year = row["年"]
         title = row["タイトル"]
         yokou = row["予稿"]
         panel = row["パネル"]
         houkoku = row["報告書"]
-    
-        # 各行をコンテナで囲む
+
         with st.container():
             col1, col2, col3, col4, col5 = st.columns([1, 1.5, 1, 1, 1])
             with col1:
-                st.markdown(f'<div class="table-cell">{tosi}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="table-cell">{year}</div>', unsafe_allow_html=True)
             with col2:
                 st.markdown(f'<div class="table-cell">{title}</div>', unsafe_allow_html=True)
+
+            # ---- 🔥 ここが修正ポイント！ ----
+            # PDFダウンロード → URLリンクボタン に変更した部分
+
             with col3:
-                if pd.notna(yokou) and os.path.exists(yokou):
-                    ext = os.path.splitext(yokou)[1].lower()
-                    mime = "application/pdf" if ext == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    with open(yokou, "rb") as f:
-                        st.download_button("予稿", f, file_name=os.path.basename(yokou),
-                                           mime=mime,
-                                           key=f"yokou-{idx}")
+                if pd.notna(yokou):
+                    st.link_button("開く", yokou)
                 else:
                     st.markdown('<div class="table-cell">なし</div>', unsafe_allow_html=True)
+
             with col4:
-                if pd.notna(panel) and os.path.exists(panel):
-                    ext = os.path.splitext(yokou)[1].lower()
-                    mime = "application/pdf" if ext == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    with open(panel, "rb") as f:
-                        st.download_button("パネル", f, file_name=os.path.basename(panel),
-                                           mime=mime, key=f"panel-{idx}")
+                if pd.notna(panel):
+                    st.link_button("開く", panel)
                 else:
                     st.markdown('<div class="table-cell">なし</div>', unsafe_allow_html=True)
+
             with col5:
-                if pd.notna(houkoku) and os.path.exists(houkoku):
-                    ext = os.path.splitext(yokou)[1].lower()
-                    mime = "application/pdf" if ext == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    with open(houkoku, "rb") as f:
-                        st.download_button("報告書", f, file_name=os.path.basename(houkoku),
-                                           mime=mime,
-                                           key=f"houkoku-{idx}")
+                if pd.notna(houkoku):
+                    st.link_button("開く", houkoku)
                 else:
                     st.markdown('<div class="table-cell">なし</div>', unsafe_allow_html=True)
+
 elif selected == "使い方":
     st.markdown(
         """
